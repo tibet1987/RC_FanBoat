@@ -1,7 +1,6 @@
 
 // variables for PPM signal read-in
 int ppmSigLastPosEdge_micros = 0;
-int currCnt_micros = 0;
 int ppmSignalPulseWidth_micros= 0;
 const byte interruptPin = 2;
 int ppmSig_lowVal = 1005;
@@ -39,12 +38,11 @@ void loop() {
 }
 
 void PPMchangeDetected(){
-  currCnt_micros = (int)micros();
   if(digitalRead(2)==LOW){
-    ppmSignalPulseWidth_micros = currCnt_micros - ppmSigLastPosEdge_micros;
+    ppmSignalPulseWidth_micros = micros() - ppmSigLastPosEdge_micros;
   }
   else{
-    ppmSigLastPosEdge_micros = currCnt_micros;
+    ppmSigLastPosEdge_micros = micros();
   }
 }
 
