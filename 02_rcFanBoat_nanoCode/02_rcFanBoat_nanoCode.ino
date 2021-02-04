@@ -33,7 +33,10 @@ void loop() {
 
   //sensorValue = analogRead(0);
   //OCR1A = sensorValue>>2;
+  
+  // make sure the PPM pulse duration has its lowest value at "ppmSig_lowVal" and has a maximum value add of 1000µs
   ppmSig_min1000 = (long)min(max(ppmSignalPulseWidth_micros-ppmSig_lowVal,0),1000);
+  // now make sure that the PPM pulse is not bigger than "ppmSig_upMinLowVal"
   OCR1A = min( (int)( (ppmSig_min1000 *(long)255) / (long)ppmSig_upMinLowVal), 255);
 }
 
