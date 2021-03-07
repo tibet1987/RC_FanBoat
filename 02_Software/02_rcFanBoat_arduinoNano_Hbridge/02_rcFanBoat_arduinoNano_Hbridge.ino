@@ -7,13 +7,12 @@ int ppmSig_lowVal = 996;
 int ppmSig_upMinLowVal = 1996;
 long ppmSig_min1000 = 0;
 long ppmSig_max2000 = 0;
-boolean forwardDirectionState = true;
+boolean forwardDirectionState = false; // false: such that positive edge is provoked and switches to forward mode initially
 boolean directionForwardRequest = true;
 
 // signal for PWM generation
 int sensorValue = 0; // test-signal from poti
 int fanPWMSig_fromPPMSig = 0;
-long cnt = 0;
 
 #define Hpositive_ON TCCR1A |= (1 << COM1A1)
 #define Hnegative_ON TCCR1A |= (1 << COM1B1)
@@ -34,7 +33,7 @@ void setup() {
   DDRB = (1 << DDB1);      // PB1 is now an output for OC1A -> H+  (D9)
   DDRB |= (1 << DDB2);      // PB2 is now an output for OC1B -> H-  (D10)
   DDRB |= (1 << DDB0);      // PB0 is now an output -> L-  (D8)
-  DDRD = (1 << DDD);      // PD7 is now an output -> L+  (D7)
+  DDRD = (1 << DDD7);      // PD7 is now an output -> L+  (D7)
 
   // set up PWM outputs
   TCCR1A |= (1 << WGM10);  // set phase correct Mode (takes double the time for a PWM cycle)
@@ -43,31 +42,38 @@ void setup() {
   OCR1B = 0x00;            // set PB2 PWM for 50% duty cycle
 
   // turn off powerstage completely in the beginning
+  /*
   Hpositive_OFF;
   Hnegative_OFF;
   Lpositive_OFF;
   Lnegative_OFF;
+  */
+  Hpositive_OFF;
+  Lnegative_OFF;
+  Hnegative_ON;
+  Lpositive_ON;
 }
 
-void loop() {
-  // A = positive
-  // B = negative
+void loop() {  
+  // condition to change 'directionForwardRequest'
 
-  if( (forwardDirectionState==true) && (directionForwardRequest==false) ){
-    // the following sequence has to stay the same!
-    Hpositive_OFF;
-    delay(1); // safety waiting time
-    Lnegative_OFF;
-    Lpositive_ON;
-    Hnegative_ON;
-    forwardDirectionState = directionForwardRequest;
-  }
-  elseif( (forwardDirectionState==false) && (directionForwardRequest==true) ){
-    Hpositive_OFF;
+  if( (forwardDirectionState==false) && (directionForwardRequest==true) ){
+    // switching to forward mode
     Hnegative_OFF;
     Lpositive_OFF;
+    delay(1); // safety waiting time not to cause half-bridge short-circuits
+    Hpositive_ON;
+    Lnegative_ON;
+    forwardDirectionState = directionForwardRequest; // update state
+  }
+  else if( (forwardDirectionState==true) && (directionForwardRequest==false) ){
+    // switching to backward mode
+    Hpositive_OFF;
     Lnegative_OFF;
-    forwardDirectionState = directionForwardRequest;
+    delay(1); // safety waiting time not to cause half-bridge short-circuits
+    Hnegative_ON;
+    Lpositive_ON;
+    forwardDirectionState = directionForwardRequest; // update state
   }
   
   // make sure the PPM pulse duration has its lowest value at "ppmSig_lowVal" and has a maximum value add of 1000µs
@@ -82,7 +88,7 @@ void loop() {
   Serial.print(", ");
   Serial.print(ppmSig_min1000,DEC);
   Serial.print(", ");
-  Serial.println(test,DEC);
+  Serial.println(OCR1A,DEC);
 }
 
 void PPMchangeDetected(){
