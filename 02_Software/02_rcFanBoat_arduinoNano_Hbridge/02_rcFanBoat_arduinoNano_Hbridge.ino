@@ -1,8 +1,14 @@
 
-// variables for PPM signal read-in
-int ppmSigLastPosEdge_micros = 0;
-int ppmSignalPulseWidth_micros= 0;
-const byte interruptPin = 2;
+// variables for reverseDirection PPM signal read-in
+const byte reverseDirection_interruptPin = 3;
+int revDirLastPosEdge_micros = 0;
+int revDirPulseWidth_micros= 0;
+int revDirThreshold = 1200;
+
+// variables for motor throttle PPM signal read-in
+const byte motorThrottle_interruptPin = 2;
+int motorThrottleLastPosEdge_micros = 0;
+int motorThrottlePulseWidth_micros= 0;
 int ppmSig_lowVal = 990;
 int ppmSig_upMinLowVal = 1984;
 long ppmSig_min1000 = 0;
@@ -29,9 +35,12 @@ int fanPWMSig_fromPPMSig = 0;
 
 void setup() {
   Serial.begin(9600);
-  pinMode(interruptPin, INPUT_PULLUP);
-  attachInterrupt(digitalPinToInterrupt(interruptPin),PPMchangeDetected,CHANGE);
+  pinMode(motorThrottle_interruptPin, INPUT_PULLUP);
+  attachInterrupt(digitalPinToInterrupt(motorThrottle_interruptPin),motorThrottle_pinChangeDetected,CHANGE);
 
+  pinMode(reverseDirection_interruptPin, INPUT_PULLUP);
+  attachInterrupt(digitalPinToInterrupt(reverseDirection_interruptPin),reverseDirection_pinChangeDetected,CHANGE);
+  
   // setup PWM 
   TCCR1A = 0; // reset all registers
   DDRB = (1 << DDB2);     // PB2 is now an output for OC1B -> L+  (D10)
@@ -54,7 +63,14 @@ void setup() {
 
 void loop() {  
   // condition to change 'directionForwardRequest'
-
+  if(revDirPulseWidth_micros < revDirThreshold){
+    directionForwardRequest=false;
+  }
+  else{
+    directionForwardRequest=true;
+  }
+  
+  // switch to change motor throttle direction
   if( (forwardDirectionState==false) && (directionForwardRequest==true) ){
     // switching to forward mode
     Hnegative_OFF;
@@ -77,7 +93,7 @@ void loop() {
   }
   
   // make sure the PPM pulse duration has its lowest value at "ppmSig_lowVal" and has a maximum value add of 1000µs
-  ppmSig_min1000 = (long)min(max(ppmSignalPulseWidth_micros-ppmSig_lowVal,0),1000);
+  ppmSig_min1000 = (long)min(max(motorThrottlePulseWidth_micros-ppmSig_lowVal,0),1000);
   // now make sure that the PPM pulse is not bigger than "ppmSig_upMinLowVal"
   ppmSig_max2000 = min(ppmSig_min1000+ppmSig_lowVal-1000+ppmSig_upMinLowVal,2000);
 
@@ -86,19 +102,27 @@ void loop() {
   OCR1A = min( (uint8_t)( (ppmSig_min1000 *(long)255) / (long)1000), 255);
   OCR1B = OCR1A; // forward and backward have the same duty cycle (distinguished by forward-backward-bit)
   
-  Serial.print(ppmSignalPulseWidth_micros,DEC);
+  Serial.print(motorThrottlePulseWidth_micros,DEC);
   Serial.print(", ");
-  Serial.print(testState,DEC);  
+  Serial.print(revDirPulseWidth_micros,DEC);  
   Serial.print(", ");
-  Serial.println(OCR1A,DEC);
+  Serial.println(forwardDirectionState,DEC);
 }
 
-void PPMchangeDetected(){
-  if(digitalRead(2)==LOW){
-    ppmSignalPulseWidth_micros = micros() - ppmSigLastPosEdge_micros;
+void motorThrottle_pinChangeDetected(){
+  if(digitalRead(motorThrottle_interruptPin)==LOW){
+    motorThrottlePulseWidth_micros = micros() - motorThrottleLastPosEdge_micros;
   }
   else{
-    ppmSigLastPosEdge_micros = micros();
+    motorThrottleLastPosEdge_micros = micros();
   }
 }
 
+void reverseDirection_pinChangeDetected(){
+  if(digitalRead(reverseDirection_interruptPin)==LOW){
+    revDirPulseWidth_micros = micros() - revDirLastPosEdge_micros;
+  }
+  else{
+    revDirLastPosEdge_micros = micros();
+  }
+}
