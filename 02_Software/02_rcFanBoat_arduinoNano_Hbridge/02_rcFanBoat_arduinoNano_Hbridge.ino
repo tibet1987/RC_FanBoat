@@ -94,7 +94,7 @@ void loop() {
   ppmSig_min1000 = max(motorThrottlePulseWidth_micros,ppmSig_bottomVal);
   ppmSig_min1000_max1510 = min(ppmSig_min1000,ppmSig_topVal);
   // scale motorThrottlePulseSignal down to 0..255
-  OCR1A = (ppmSig_min1000_max1510-ppmSig_bottomVal)>>1; // divide by 2 such that [1000..1510] is mapped onto [0..255]
+  OCR1A = ((int)(ppmSig_min1000_max1510-ppmSig_bottomVal))>>1; // divide by 2 such that [1000..1510] is mapped onto [0..255]
   OCR1B = OCR1A; // forward and backward have the same duty cycle (distinguished by forward-backward-bit)
   
   Serial.print("Fwd/Bwd: ");
@@ -103,12 +103,12 @@ void loop() {
   Serial.print(motorThrottlePulseWidth_micros,DEC);  
   Serial.print(",  OCR1A/B: ");
   Serial.print(OCR1A,DEC);
-  Serial.print(",  ppmSig_min1000: ");
-  Serial.print(ppmSig_min1000,DEC);
   Serial.print(",  ppmSig_min1000_max1510: ");
   Serial.print(ppmSig_min1000_max1510,DEC);
-  Serial.print(",  testState: ");
-  Serial.println(testState,DEC);
+  Serial.print(",  input: ");
+  Serial.print((ppmSig_min1000_max1510-ppmSig_bottomVal)>>1,DEC);
+  Serial.print(",  OCR1A: ");
+  Serial.println(OCR1A,DEC);
 }
 
 void motorThrottle_pinChangeDetected(){
