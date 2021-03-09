@@ -9,10 +9,10 @@ int revDirThreshold = 1200;
 const byte motorThrottle_interruptPin = 2;
 int motorThrottleLastPosEdge_micros = 0;
 int motorThrottlePulseWidth_micros= 0;
-int ppmSig_lowVal = 1100;
-int ppmSig_upMinLowVal = 1984;
-long ppmSig_min1000 = 0;
-long ppmSig_max2000 = 0;
+int ppmSig_bottomVal = 1000;
+int ppmSig_topVal = 1510;
+int ppmSig_min1000 = 0;
+int ppmSig_min1000_max1510 = 0;
 boolean forwardDirectionState = false; // false: such that positive edge is provoked and switches to forward mode initially
 boolean directionForwardRequest = true;
 uint8_t testState = 0;
@@ -79,7 +79,6 @@ void loop() {
     Hpositive_ON;
     Lnegative_ON;
     forwardDirectionState = directionForwardRequest; // update state
-    testState = 1;
   }
   else if( (forwardDirectionState==true) && (directionForwardRequest==false) ){
     // switching to backward mode
@@ -89,18 +88,15 @@ void loop() {
     Hnegative_ON;
     Lpositive_ON;
     forwardDirectionState = directionForwardRequest; // update state
-    testState = 2;
   }
   
-  // make sure the PPM pulse duration has its lowest value at "nm" and has a maximum value add of 1000µs
-  ppmSig_min1000 = (long)min(max(motorThrottlePulseWidth_micros-ppmSig_lowVal,0),1000);
-  // now make sure that the PPM pulse is not bigger than "ppmSig_upMinLowVal"
-  ppmSig_max2000 = min(ppmSig_min1000+ppmSig_lowVal-1000+ppmSig_upMinLowVal,2000);
-
-  // scale ppmSig_min1000 range of 0..1000 down to 0..255
-  //ppmSig_max2000 = (ppmSig_min1000 *(long)255) / (long)1000;
-  OCR1A = min( (uint8_t)( (ppmSig_min1000 *(long)255) / (long)1000), 255);
+  // make sure the motorThrottlePulseSignal is clipped beyond  [ppmSig_bottomVal, ppmSig_topVal]
+  ppmSig_min1000 = max(motorThrottlePulseWidth_micros,ppmSig_bottomVal);
+  ppmSig_min1000_max1510 = min(ppmSig_min1000,ppmSig_topVal);
+  // scale motorThrottlePulseSignal down to 0..255
+  OCR1A = (ppmSig_min1000_max1510-ppmSig_bottomVal)>>1; // divide by 2 such that [1000..1510] is mapped onto [0..255]
   OCR1B = OCR1A; // forward and backward have the same duty cycle (distinguished by forward-backward-bit)
+  
   Serial.print("Fwd/Bwd: ");
   Serial.print(forwardDirectionState,DEC);
   Serial.print(",  motorThrottle: ");
@@ -109,8 +105,10 @@ void loop() {
   Serial.print(OCR1A,DEC);
   Serial.print(",  ppmSig_min1000: ");
   Serial.print(ppmSig_min1000,DEC);
-  Serial.print(",  ppmSig_max2000: ");
-  Serial.println(ppmSig_max2000,DEC);
+  Serial.print(",  ppmSig_min1000_max1510: ");
+  Serial.print(ppmSig_min1000_max1510,DEC);
+  Serial.print(",  testState: ");
+  Serial.println(testState,DEC);
 }
 
 void motorThrottle_pinChangeDetected(){
