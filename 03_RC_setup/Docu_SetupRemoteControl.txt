@@ -1,0 +1,18 @@
+Remote control type:		Graupner MC-12
+							35 MHz FM Sender
+							2 control sticks with 2 DOF each
+							1 switch installed (controls)
+Setup Goals:
+	- the throttle should be controlled by the left control stick
+	- upon enabling the switch the throttle should go into reverse
+	- also for turning the fan left right we are going to use the rudder channel 
+	   (set for the right control stick)
+
+Setup process:
+	- the switch usually controls both ailerons going up or down completely as spoilers (see "ailerons_as_spolier.jpg")
+	- we want to repurpose the switch signal as a signal for the boat to go into reverse
+	- in order for this signal to be unique the aileron signal (on the left control stick)
+	   cannot be positive or negative
+	- we choose the "aileron differentiation" option of the RC to prevent a negative signal for the aileron ("aileron_diff_option.jpg" picture)
+	- now we have to set the aileron mix diff to at least +100%
+	- if we now turn on the switch the aileron signal 2 should go down but not if we use the left control stick --> we have a unique signal telling whether the switch is on :)
