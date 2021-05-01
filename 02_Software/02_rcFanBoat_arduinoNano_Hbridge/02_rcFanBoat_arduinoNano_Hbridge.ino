@@ -15,7 +15,6 @@ int ppmSig_min1000 = 0;
 int ppmSig_min1000_max1510 = 0;
 boolean forwardDirectionState = false; // false: such that positive edge is provoked and switches to forward mode initially
 boolean directionForwardRequest = true;
-uint8_t testState = 0;
 
 // signal for PWM generation
 int sensorValue = 0; // test-signal from poti
@@ -98,7 +97,7 @@ void loop() {
   OCR1B = OCR1A; // forward and backward have the same duty cycle (distinguished by forward-backward-bit)
   
   Serial.print("Fwd/Bwd: ");
-  Serial.print(forwardDirectionState,DEC);
+  Serial.print(directionForwardRequest,DEC);
   Serial.print(",  motorThrottle: ");
   Serial.print(motorThrottlePulseWidth_micros,DEC);  
   Serial.print(",  OCR1A/B: ");
